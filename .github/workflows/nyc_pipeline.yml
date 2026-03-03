@@ -1,0 +1,48 @@
+name: NYC Property Manager Targeting Pipeline
+
+on:
+  workflow_dispatch:
+  schedule:
+    # Mondays 7:00 AM New York time is usually 12:00 UTC (EST) or 11:00 UTC (EDT).
+    # Pick a UTC time you’re fine with year-round. Example: Mondays 12:00 UTC.
+    - cron: "0 12 * * 1"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install Python deps
+        run: |
+          python -m pip install --upgrade pip
+          pip install pandas openpyxl requests
+
+      - name: Prepare folders
+        run: |
+          mkdir -p data out
+          chmod +x download_nyc_data.sh
+
+      - name: Download NYC data
+        env:
+          NYC_OPEN_DATA_APP_TOKEN: ${{ secrets.NYC_OPEN_DATA_APP_TOKEN }}
+        run: |
+          # If your download script supports a target dir arg:
+          bash download_nyc_data.sh data
+
+      - name: Run pipeline using local files
+        run: |
+          python nyc_live_pipeline.py --data-dir data --output-dir out
+
+      - name: Upload Excel outputs as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: nyc-multifamily-targeting
+          path: out/*.xlsx

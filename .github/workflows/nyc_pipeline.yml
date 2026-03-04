@@ -46,3 +46,16 @@ jobs:
         with:
           name: nyc-multifamily-targeting
           path: out/*.xlsx
+
+
+
+
+
+          - name: Validate download script is plain bash
+      run: |
+    head -c 50 download_nyc_data.sh | cat
+    if head -c 50 download_nyc_data.sh | grep -q '{\\rtf'; then
+      echo "FATAL: download_nyc_data.sh is RTF, not bash."
+      exit 1
+    fi
+    chmod +x download_nyc_data.sh
